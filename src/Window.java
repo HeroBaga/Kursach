@@ -17,7 +17,6 @@ public class Window extends JPanel {
 
 
     public Window() {
-
         try {
             image = ImageIO.read(new File("./src/Background.jpg"));
         } catch (IOException e) {
@@ -34,35 +33,46 @@ public class Window extends JPanel {
 
         JPanel jField = new JPanel();
         JPanel jPanel = new JPanel();
-        jPanel.setLayout(new GridLayout(13, 5, 5, 5));
+        jPanel.setLayout(new GridLayout(1, 1, 5, 5));
         Container container = jFrame.getContentPane();
 
-        JButton Host = new JButton("Создать");
-        Host.setFocusable(false);
-        Host.setEnabled(true);
-        JButton Connect = new JButton("Присоедениться");
-        Connect.setFocusable(false);
-        Connect.setEnabled(true);
-        JButton Rules = new JButton("Правила");
-        Rules.setFocusable(false);
-        Rules.setEnabled(true);
-        JButton Exit = new JButton("Выход");
-        Exit.setFocusable(false);
-        Exit.setEnabled(true);
+        JMenuBar mainMenu = new JMenuBar();
+        JMenu main = new JMenu("Приложение");
+        JMenuItem Connect = new JMenuItem("Присоедениться");
+        main.add(Connect);
+        JMenuItem Rules = new JMenuItem("Правила");
+        main.add(Rules);
+        JMenuItem Exit = new JMenuItem("Выйти");
+        main.add(Exit);
+        mainMenu.add(main);
+        jFrame.setJMenuBar(mainMenu);
+
+
+//        JButton Host = new JButton("Создать");
+//        Host.setFocusable(false);
+//        Host.setEnabled(true);
+//        JButton Connect = new JButton("Присоедениться");
+//        Connect.setFocusable(false);
+//        Connect.setEnabled(true);
+//        JButton Rules = new JButton("Правила");
+//        Rules.setFocusable(false);
+//        Rules.setEnabled(true);
+//        JButton Exit = new JButton("Выход");
+//        Exit.setFocusable(false);
+//        Exit.setEnabled(true);
 
         jFrame.setPreferredSize(new Dimension(width, height));
         jFrame.setBounds(dimension.width / 2 - width / 2, dimension.height / 2 - height / 2, width, height);
         jFrame.pack();
 
-        jPanel.add(Host); // Номер 0 в контейнере controlPanel (не изменять)
-        jPanel.add(Connect); // Номер 1 в контейнере controlPanel (не изменять)
-        jPanel.add(Rules);
-        jPanel.add(Exit);
+//        jPanel.add(Host); // Номер 0 в контейнере controlPanel (не изменять)
+//        jPanel.add(Connect); // Номер 1 в контейнере controlPanel (не изменять)
+//        jPanel.add(Rules);
+//        jPanel.add(Exit);
 
-        container.add(jPanel, BorderLayout.SOUTH); // Номер 0 в контейнере container (не изменять)
-
-        Host.addActionListener(e -> HostGame(container));
-        Connect.addActionListener(e->ConnectGame(container));
+        container.add(jPanel, BorderLayout.NORTH); // Номер 0 в контейнере container (не изменять)
+//        container.add(jField, BorderLayout.NORTH);
+        Connect.addActionListener(e -> ConnectGame(container));
         Exit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
@@ -78,105 +88,25 @@ public class Window extends JPanel {
 
     }
 
-    public void draw(Graphics g, JPanel field) {
+    public void draw(Graphics g, Container field) {
         g.drawImage(image, 0, 0, null);
     }
 
-    public void HostGame(Container container){
-System.out.println("Попытка создать сервер");
-        new MultiThreadServer();
-    }
-
     public void ConnectGame(Container container) {
-//        запускаем подключение сокета по известным координатам и нициализируем приём сообщений с консоли клиента
-        try (Socket socket = new Socket("localhost", 3345);
-             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-             DataOutputStream oos = new DataOutputStream(socket.getOutputStream());
-             DataInputStream ois = new DataInputStream(socket.getInputStream());) {
+        draw(container.getGraphics(), container);
+        Socket clientSocket;
+        ObjectOutputStream out;
+        ObjectInputStream in;
 
-            System.out.println("Client connected to socket.");
-            System.out.println();
-            System.out.println("Client writing channel = oos & reading channel = ois initialized.");
+        try {
 
-// проверяем живой ли канал и работаем если живой
-            while (!socket.isOutputShutdown()) {
-
-// ждём консоли клиента на предмет появления в ней данных
-                if (br.ready()) {
-
-// данные появились - работаем
-                    System.out.println("Client start writing in channel...");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    String clientCommand = br.readLine();
-
-// пишем данные с консоли в канал сокета для сервера
-                    oos.writeUTF(clientCommand);
-                    oos.flush();
-                    System.out.println("Clien sent message " + clientCommand + " to server.");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-// ждём чтобы сервер успел прочесть сообщение из сокета и ответить
-
-// проверяем условие выхода из соединения
-                    if (clientCommand.equalsIgnoreCase("quit")) {
-
-// если условие выхода достигнуто разъединяемся
-                        System.out.println("Client kill connections");
-                        try {
-                            Thread.sleep(2000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-// смотрим что нам ответил сервер на последок перед закрытием ресурсов
-                        if (ois.read() > -1) {
-                            System.out.println("reading...");
-                            String in = ois.readUTF();
-                            System.out.println(in);
-                        }
-
-// после предварительных приготовлений выходим из цикла записи чтения
-                        break;
-                    }
-
-// если условие разъединения не достигнуто продолжаем работу
-                    System.out.println("Client sent message & start waiting for data from server...");
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-// проверяем, что нам ответит сервер на сообщение(за предоставленное ему время в паузе он должен был успеть ответить)
-                    if (ois.read() > -1) {
-
-// если успел забираем ответ из канала сервера в сокете и сохраняем её в ois переменную,  печатаем на свою клиентскую консоль
-                        System.out.println("reading...");
-                        String in = ois.readUTF();
-                        System.out.println(in);
-                    }
-                }
-            }
-// на выходе из цикла общения закрываем свои ресурсы
-            System.out.println("Closing connections & channels on clentSide - DONE.");
-
-        } catch (UnknownHostException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            clientSocket = new Socket("localhost", 8189);
+            out = new ObjectOutputStream(clientSocket.getOutputStream());
+            in = new ObjectInputStream(clientSocket.getInputStream());
+            out.writeObject("Hello there");
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
     }
-
-
 }
 
