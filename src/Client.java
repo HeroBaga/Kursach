@@ -1,6 +1,5 @@
-public  class Client {
-    synchronized
-    public static void main(String[] args) {
-        Window window = new Window();
+import java.io.IOException;
+
+public class Client {
+    public static void main(String[] args) throws IOException {Window window = new Window();}
     }
-}
